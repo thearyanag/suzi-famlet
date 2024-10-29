@@ -1,0 +1,20 @@
+{
+  "name": "tg_bot_agent",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typegram": "^5.2.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.95.4",
+    "axios": "^1.7.7",
+    "gif-frames": "^1.0.1",
+    "js-sha1": "^0.7.0",
+    "node-cache": "^5.1.2",
+    "telegraf": "^4.16.3"
+  }
+}
