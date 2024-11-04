@@ -1,23 +1,22 @@
 import { Context, Telegraf } from "telegraf";
-
-import { type IAgentRuntime } from "@/core/types";
 import { MessageManager } from "./messageManager";
 
 export class TelegramClient {
   private bot: Telegraf<Context>;
-  private runtime: IAgentRuntime;
   private messageManager: MessageManager;
 
-  constructor(runtime: IAgentRuntime, botToken: string) {
+  constructor(botToken: string, openAiKey: string) {
     console.log("📱 Constructing new TelegramClient...");
-    this.runtime = runtime;
     this.bot = new Telegraf(botToken);
-    this.messageManager = new MessageManager(this.bot, this.runtime);
+    this.messageManager = new MessageManager(this.bot, openAiKey);
 
-    console.log("Setting up message handler...");
+    this.setupHandlers();
+    console.log("✅ TelegramClient constructor completed");
+  }
+
+  private setupHandlers() {
     this.bot.on("message", async (ctx) => {
       try {
-        console.log("📥 Received message:", ctx.message);
         await this.messageManager.handleMessage(ctx);
       } catch (error) {
         console.error("❌ Error handling message:", error);
@@ -25,21 +24,10 @@ export class TelegramClient {
       }
     });
 
-    // Handle specific message types for better logging
-    this.bot.on("photo", (ctx) => {
-      console.log("📸 Received photo message with caption:", ctx.message.caption);
-    });
-
-    this.bot.on("document", (ctx) => {
-      console.log("📎 Received document message:", ctx.message.document?.file_name);
-    });
-
     this.bot.catch((err, ctx) => {
       console.error(`❌ Telegram Error for ${ctx.updateType}:`, err);
       ctx.reply("An unexpected error occurred. Please try again later.");
     });
-
-    console.log("✅ TelegramClient constructor completed");
   }
 
   public async start(): Promise<void> {
@@ -48,26 +36,11 @@ export class TelegramClient {
       await this.bot.launch({
         dropPendingUpdates: true,
       });
-      console.log("✨ Telegram bot successfully launched and is running!");
+      console.log("✨ Telegram bot successfully launched!");
       console.log(`Bot username: @${this.bot.botInfo?.username}`);
 
-      // Graceful shutdown handlers
-      const shutdownHandler = async (signal: string) => {
-        console.log(
-          `⚠️ Received ${signal}. Shutting down Telegram bot gracefully...`
-        );
-        try {
-          await this.stop();
-          console.log("🛑 Telegram bot stopped gracefully");
-        } catch (error) {
-          console.error("❌ Error during Telegram bot shutdown:", error);
-          throw error;
-        }
-      };
-
-      process.once("SIGINT", () => shutdownHandler("SIGINT"));
-      process.once("SIGTERM", () => shutdownHandler("SIGTERM"));
-      process.once("SIGHUP", () => shutdownHandler("SIGHUP"));
+      process.once("SIGINT", () => this.stop());
+      process.once("SIGTERM", () => this.stop());
     } catch (error) {
       console.error("❌ Failed to launch Telegram bot:", error);
       throw error;
